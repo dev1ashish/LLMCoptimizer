@@ -367,13 +367,89 @@ const SimpleFlowEditor = () => {
       localStorage.removeItem('flow-error');
     }
     
-    // Ensure fit view is triggered after initial load
-    const timer = setTimeout(() => {
-      fitView();
-      setIsInitialLoading(false);
-    }, 1000);
+    // Ensure all nodes have proper spacing and positions to avoid overlapping
+    const repositionNodes = () => {
+      // Get nodes from the store
+      const storeNodes = [...useFlowStore.getState().nodes];
+      
+      // Make sure nodes are sorted by their natural sequence in the workflow
+      const nodeTypeOrder = [
+        'basePromptNode', 
+        'metaPromptNode', 
+        'variationsNode', 
+        'testCasesNode', 
+        'evaluationNode', 
+        'resultsNode',
+        'modelArenaNode'
+      ];
+      
+      // Sort nodes according to the workflow sequence
+      const sortedNodes = [...storeNodes].sort((a, b) => {
+        const typeA = a.type || '';
+        const typeB = b.type || '';
+        return nodeTypeOrder.indexOf(typeA) - nodeTypeOrder.indexOf(typeB);
+      });
+      
+      // Apply more generous spacing
+      const verticalSpacing = 220; // Increased vertical spacing
+      const horizontalPosition = 250; // Center position
+      
+      const updatedNodes = sortedNodes.map((node, index) => {
+        return {
+          ...node,
+          position: {
+            x: horizontalPosition,
+            y: index * verticalSpacing + 50 // Start from y=50 with proper spacing
+          }
+        };
+      });
+      
+      // Update all nodes in the store
+      useFlowStore.getState().setNodes(updatedNodes);
+      
+      // Give time for the changes to apply, then fit view
+      setTimeout(() => {
+        try {
+          const instance = useFlowStore.getState().reactFlowInstance;
+          if (instance) {
+            instance.fitView({ padding: 0.2 });
+          }
+        } catch (error) {
+          console.error("Error fitting view after repositioning:", error);
+        }
+      }, 100);
+    };
     
-    return () => clearTimeout(timer);
+    // Load the flow and then reposition nodes
+    setTimeout(() => {
+      try {
+        const loaded = loadFlowFromLocalStorage();
+        if (loaded) {
+          toast({
+            title: "Flow Loaded",
+            description: "Successfully loaded your saved flow",
+          });
+        }
+        
+        // Reposition nodes whether we loaded a saved flow or not
+        // Increase the delay to ensure React Flow is fully initialized
+        setTimeout(repositionNodes, 500);
+        
+        // Ensure fit view is triggered after initial load and repositioning
+        setTimeout(() => {
+          fitView();
+          setIsInitialLoading(false);
+        }, 700);
+      } catch (error) {
+        console.error("Failed to load flow:", error);
+        
+        // Even if loading fails, reposition the default nodes
+        setTimeout(repositionNodes, 500);
+        setIsInitialLoading(false);
+      }
+    }, 800);
+    
+    return () => {};
   }, [fitView]);
   
   return (

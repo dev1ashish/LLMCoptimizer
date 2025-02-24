@@ -221,19 +221,20 @@ const BasePromptNode: React.FC<NodeProps<BasePromptNodeData>> = ({ id, data }) =
               Use Example
             </Button>
             
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 bg-gradient-to-r from-violet-100 to-amber-100 dark:from-violet-950 dark:to-amber-950 px-3 py-1 rounded-md border border-violet-200 dark:border-violet-800 shadow-sm">
               <Checkbox 
                 id="auto-mode" 
                 checked={autoMode} 
                 onCheckedChange={(checked) => setAutoMode(!!checked)}
+                className="data-[state=checked]:bg-violet-600 data-[state=checked]:border-violet-600"
               />
-              <Label htmlFor="auto-mode" className="text-xs cursor-pointer">
+              <Label htmlFor="auto-mode" className="text-xs cursor-pointer font-medium">
                 Auto Mode
               </Label>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Info className="h-3 w-3 cursor-help text-muted-foreground" />
+                    <Info className="h-3 w-3 cursor-help text-amber-600 dark:text-amber-400" />
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
                     <p className="max-w-xs text-xs">
@@ -256,7 +257,7 @@ const BasePromptNode: React.FC<NodeProps<BasePromptNodeData>> = ({ id, data }) =
 
         <Button
           onClick={handleAction}
-          className="w-full"
+          className={`w-full ${autoMode ? 'bg-gradient-to-r from-violet-600 to-amber-600 hover:from-violet-700 hover:to-amber-700 border-0 shadow-md' : ''}`}
           disabled={(isGenerating || isRunning) || !basePrompt.trim()}
         >
           {(isGenerating || isRunning) ? (
@@ -265,7 +266,15 @@ const BasePromptNode: React.FC<NodeProps<BasePromptNodeData>> = ({ id, data }) =
               {autoMode ? 'Running Auto Mode...' : 'Generating...'}
             </>
           ) : (
-            autoMode ? 'Run Auto Mode' : 'Generate Meta Prompt'
+            autoMode ? (
+              <>
+                <span className="relative flex h-3 w-3 mr-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+                </span>
+                Run Auto Mode
+              </>
+            ) : 'Generate Meta Prompt'
           )}
         </Button>
       </CardContent>

@@ -35,16 +35,25 @@ export function MultiModelSelector({
   const [selectedConfigs, setSelectedConfigs] = useState<ModelConfig[]>(initialSelectedModels);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize selected providers and models from initialSelectedModels
+  // Initialize selected providers with any that may be already in the initial models
   useEffect(() => {
-    if (initialSelectedModels.length > 0) {
-      const providers: Record<string, boolean> = {};
-      const models: Record<string, string[]> = {};
-      const keys: Record<string, string> = {};
-
+    // Default to having all providers enabled
+    const allProviders = Object.keys(MODEL_CONFIGS).reduce((acc, provider) => {
+      acc[provider] = true;
+      return acc;
+    }, {} as Record<string, boolean>);
+    
+    let providers = { ...allProviders };
+    const models: Record<string, string[]> = {};
+    const keys: Record<string, string> = {};
+    
+    // If we have initial models, use their information
+    if (initialSelectedModels && initialSelectedModels.length > 0) {
       initialSelectedModels.forEach(config => {
+        // Ensure provider is enabled
         providers[config.provider] = true;
         
+        // Track selected models
         if (!models[config.provider]) {
           models[config.provider] = [];
         }
@@ -53,16 +62,34 @@ export function MultiModelSelector({
           models[config.provider].push(config.model);
         }
         
+        // Track API keys
         if (config.apiKey && !keys[config.provider]) {
           keys[config.provider] = config.apiKey;
         }
       });
-
-      setSelectedProviders(providers);
-      setSelectedModels(models);
-      setApiKeys(keys);
+      
       setSelectedConfigs(initialSelectedModels);
+    } else {
+      // If no initial models, select the first model from each provider by default
+      Object.keys(MODEL_CONFIGS).forEach(provider => {
+        if (MODEL_CONFIGS[provider].models.length > 0) {
+          const defaultModel = MODEL_CONFIGS[provider].models[0].id;
+          models[provider] = [defaultModel];
+          
+          // Create a default config for this model
+          const newConfig = {
+            ...getDefaultConfig(provider, defaultModel),
+            apiKey: ''
+          };
+          
+          setSelectedConfigs(prev => [...prev, newConfig]);
+        }
+      });
     }
+    
+    setSelectedProviders(providers);
+    setSelectedModels(models);
+    setApiKeys(keys);
   }, [initialSelectedModels]);
 
   // Handle provider toggle

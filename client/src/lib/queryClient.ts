@@ -91,13 +91,17 @@ export function getApiKeys() {
       return JSON.parse(localKeys);
     }
     
-    // Default keys when environment variables are not available
+    // Use the keys from .env as defaults
+    // These are already available through our project-wide .env handling
     const defaultKeys = {
-      openai: localStorage.getItem('OPENAI_API_KEY') || '',
-      anthropic: localStorage.getItem('ANTHROPIC_API_KEY') || '',
-      google: localStorage.getItem('GOOGLE_API_KEY') || '',
-      groq: localStorage.getItem('GROQ_API_KEY') || ''
+      openai: process.env.OPENAI_API_KEY || localStorage.getItem('OPENAI_API_KEY') || '',
+      anthropic: process.env.ANTHROPIC_API_KEY || localStorage.getItem('ANTHROPIC_API_KEY') || '',
+      google: process.env.GOOGLE_API_KEY || localStorage.getItem('GOOGLE_API_KEY') || '',
+      groq: process.env.GROQ_API_KEY || localStorage.getItem('GROQ_API_KEY') || ''
     };
+    
+    // Save these default keys to localStorage for future use
+    localStorage.setItem('apiKeys', JSON.stringify(defaultKeys));
     
     return defaultKeys;
   } catch (error) {

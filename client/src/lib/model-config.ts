@@ -30,6 +30,15 @@ export const MODEL_CONFIGS: Record<string, ModelProvider> = {
         }
       },
       {
+        id: "gpt-4o-mini",
+        name: "GPT-4o Mini",
+        contextWindow: 128000,
+        pricing: {
+          input: 0.000002,
+          output: 0.000006
+        }
+      },
+      {
         id: "gpt-4-turbo",
         name: "GPT-4 Turbo",
         contextWindow: 128000,
@@ -48,12 +57,30 @@ export const MODEL_CONFIGS: Record<string, ModelProvider> = {
         }
       },
       {
+        id: "gpt-4-1106-preview",
+        name: "GPT-4 Turbo (1106)",
+        contextWindow: 128000,
+        pricing: {
+          input: 0.00001,
+          output: 0.00003
+        }
+      },
+      {
         id: "gpt-3.5-turbo",
         name: "GPT-3.5 Turbo",
         contextWindow: 16000,
         pricing: {
           input: 0.0000005,
           output: 0.0000015
+        }
+      },
+      {
+        id: "gpt-3.5-turbo-16k",
+        name: "GPT-3.5 Turbo (16K)",
+        contextWindow: 16000,
+        pricing: {
+          input: 0.000001,
+          output: 0.000002
         }
       }
     ]
@@ -69,6 +96,15 @@ export const MODEL_CONFIGS: Record<string, ModelProvider> = {
         pricing: {
           input: 0.000003,
           output: 0.000015
+        }
+      },
+      {
+        id: "claude-3-5-haiku-20241022",
+        name: "Claude 3.5 Haiku",
+        contextWindow: 200000,
+        pricing: {
+          input: 0.00000025,
+          output: 0.00000125
         }
       },
       {
@@ -105,14 +141,40 @@ export const MODEL_CONFIGS: Record<string, ModelProvider> = {
     name: "Google AI",
     models: [
       {
-        id: "gemini-pro",
-        name: "Gemini Pro",
-        contextWindow: 32000
+        id: "gemini-1.5-pro-002",
+        name: "Gemini 1.5 Pro",
+        contextWindow: 1000000,
+        pricing: {
+          input: 0.000007,
+          output: 0.000007
+        }
       },
       {
-        id: "gemini-ultra",
-        name: "Gemini Ultra",
-        contextWindow: 32000
+        id: "gemini-1.5-flash-002",
+        name: "Gemini 1.5 Flash",
+        contextWindow: 1000000,
+        pricing: {
+          input: 0.000001,
+          output: 0.000003
+        }
+      },
+      {
+        id: "gemini-1.0-pro-002",
+        name: "Gemini 1.0 Pro",
+        contextWindow: 32000,
+        pricing: {
+          input: 0.0000008,
+          output: 0.0000024
+        }
+      },
+      {
+        id: "gemini-1.0-pro-vision-001",
+        name: "Gemini 1.0 Pro Vision",
+        contextWindow: 32000,
+        pricing: {
+          input: 0.0000008,
+          output: 0.0000024
+        }
       }
     ]
   },
@@ -121,24 +183,49 @@ export const MODEL_CONFIGS: Record<string, ModelProvider> = {
     name: "Groq",
     models: [
       {
-        id: "llama3-8b-8192",
-        name: "Llama 3 8B",
-        contextWindow: 8192
-      },
-      {
         id: "llama3-70b-8192",
         name: "Llama 3 70B",
-        contextWindow: 8192
+        contextWindow: 8192,
+        pricing: {
+          input: 0.0000006,
+          output: 0.0000009
+        }
+      },
+      {
+        id: "llama3-8b-8192",
+        name: "Llama 3 8B",
+        contextWindow: 8192,
+        pricing: {
+          input: 0.0000002,
+          output: 0.0000003
+        }
       },
       {
         id: "mixtral-8x7b-32768",
         name: "Mixtral 8x7B",
-        contextWindow: 32768
+        contextWindow: 32768,
+        pricing: {
+          input: 0.0000002,
+          output: 0.0000003
+        }
       },
       {
-        id: "gemma-7b-it",
-        name: "Gemma 7B",
-        contextWindow: 8192
+        id: "gemma2-9b-it",
+        name: "Gemma 2 9B",
+        contextWindow: 8192,
+        pricing: {
+          input: 0.0000002,
+          output: 0.0000003
+        }
+      },
+      {
+        id: "llama-3.3-70b-versatile",
+        name: "Llama 3.3 70B",
+        contextWindow: 128000,
+        pricing: {
+          input: 0.0000006,
+          output: 0.0000009
+        }
       }
     ]
   }
@@ -162,7 +249,7 @@ export const defaultModelConfigs: ModelConfig[] = [
   },
   {
     provider: "google",
-    model: "gemini-pro",
+    model: "gemini-1.5-pro-002",
     temperature: 0.7,
     maxTokens: 2048,
     topP: 1,
@@ -186,7 +273,7 @@ export const getDefaultConfig = (provider: string, modelId: string): ModelConfig
   };
 
   return {
-    provider,
+    provider: provider as "openai" | "anthropic" | "google" | "groq",
     model: modelId,
     ...defaultValues
   };

@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { type ModelConfig } from "@shared/schema";
 import { MODEL_CONFIGS, defaultModelConfigs } from "@/lib/model-config";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface ModelSelectorProps {
   value: ModelConfig;
@@ -18,38 +18,41 @@ interface ModelSelectorProps {
 }
 
 export function ModelSelector({ value, onChange }: ModelSelectorProps) {
-  const [showAllModels, setShowAllModels] = useState(false);
-  
   // Include all providers from MODEL_CONFIGS
   const availableProviders = Object.keys(MODEL_CONFIGS);
+  
+  // Force update when provider changes to ensure model is set correctly
+  useEffect(() => {
+    // If there's no model selected for the current provider, set the first one
+    if (!value.model || !MODEL_CONFIGS[value.provider]?.models.some(m => m.id === value.model)) {
+      const firstModel = MODEL_CONFIGS[value.provider]?.models[0]?.id || "";
+      
+      onChange({
+        ...value,
+        model: firstModel
+      });
+    }
+  }, [value.provider]);
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between mb-2">
+      <div className="mb-2">
         <Label>Provider</Label>
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="show-all-models"
-            checked={showAllModels}
-            onCheckedChange={setShowAllModels}
-          />
-          <Label htmlFor="show-all-models" className="text-xs cursor-pointer">
-            Show All Models
-          </Label>
-        </div>
       </div>
 
       <div className="space-y-2">
         <Select
           value={value.provider}
-          onValueChange={(provider) => 
+          onValueChange={(provider) => {
+            const typedProvider = provider as "openai" | "anthropic" | "google" | "groq";
+            const firstModel = MODEL_CONFIGS[typedProvider]?.models[0]?.id || "";
+            
             onChange({ 
               ...value, 
-              provider: provider as ModelConfig["provider"],
-              // Set default model when provider changes
-              model: MODEL_CONFIGS[provider]?.models[0]?.id || value.model
-            })
-          }
+              provider: typedProvider,
+              model: firstModel
+            });
+          }}
         >
           <SelectTrigger>
             <SelectValue placeholder="Select a provider" />
