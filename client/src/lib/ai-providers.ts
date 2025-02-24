@@ -82,13 +82,61 @@ export async function generateTestCases(
     
     if (shouldMock) {
       await new Promise(resolve => setTimeout(resolve, 1200)); // Simulate API delay
-      return [
-        "Can you help me understand quantum computing in simple terms?",
-        "I need to write an email to decline a job offer politely.",
-        "What are the key differences between machine learning and deep learning?",
-        "How can I improve my time management skills?",
-        "I'm planning a trip to Japan. What are the must-see places?"
-      ];
+      
+      // Generate contextually relevant mock test cases based on the metaprompt
+      // These are just examples that would be replaced with real LLM-generated cases in production
+      const lowercasePrompt = metaPrompt.toLowerCase();
+      
+      if (lowercasePrompt.includes('marketing') || lowercasePrompt.includes('copywriting')) {
+        return [
+          "Write compelling ad copy for a new fitness app that tracks workouts and nutrition",
+          "Create a catchy slogan for a sustainable clothing brand that uses recycled materials",
+          "Draft an email campaign for a limited-time 30% off sale for loyal customers",
+          "Write a product description for a premium coffee subscription service",
+          "Create social media copy for the launch of a new smart home device"
+        ];
+      } else if (lowercasePrompt.includes('programming') || lowercasePrompt.includes('coding') || lowercasePrompt.includes('developer')) {
+        return [
+          "Explain how to implement a binary search algorithm in JavaScript",
+          "What are the key differences between REST and GraphQL APIs?", 
+          "How can I optimize a React component that's rendering too slowly?",
+          "Explain the concept of dependency injection in software architecture",
+          "What's the best way to handle authentication in a Node.js application?"
+        ];
+      } else if (lowercasePrompt.includes('writing') || lowercasePrompt.includes('content')) {
+        return [
+          "Write an engaging introduction for an article about climate change solutions",
+          "How do I structure a persuasive essay about education reform?",
+          "Create an outline for a blog post about productivity techniques",
+          "What are some techniques for overcoming writer's block?",
+          "How can I improve the pacing in my short story?"
+        ];
+      } else if (lowercasePrompt.includes('finance') || lowercasePrompt.includes('investment')) {
+        return [
+          "Explain the difference between ETFs and mutual funds for a beginner investor",
+          "What should I consider when creating a retirement savings plan?",
+          "How does dollar-cost averaging work as an investment strategy?",
+          "What are the pros and cons of different asset allocation strategies?",
+          "How can I build a diversified portfolio with a limited budget?"
+        ];
+      } else if (lowercasePrompt.includes('health') || lowercasePrompt.includes('medical')) {
+        return [
+          "What are the symptoms of vitamin D deficiency?",
+          "How can I create a balanced meal plan for someone with type 2 diabetes?",
+          "What are the most effective exercises for improving cardiovascular health?",
+          "Explain the difference between a cold and allergies",
+          "What are the recommended screenings for adults over 50?"
+        ];
+      } else {
+        // Generic test cases if no specific category is detected
+        return [
+          "Can you help me understand " + (metaPrompt.length > 50 ? metaPrompt.substring(0, 50) + "..." : metaPrompt) + " in simple terms?",
+          "I need advice on how to approach a problem related to " + (metaPrompt.length > 30 ? metaPrompt.substring(0, 30) + "..." : metaPrompt),
+          "What are the key factors to consider when dealing with " + (metaPrompt.length > 40 ? metaPrompt.substring(0, 40) + "..." : metaPrompt) + "?",
+          "How can I improve my skills in " + (metaPrompt.length > 20 ? metaPrompt.substring(0, 20) + "..." : metaPrompt) + "?",
+          "What are the best resources for learning about " + (metaPrompt.length > 30 ? metaPrompt.substring(0, 30) + "..." : metaPrompt) + "?"
+        ];
+      }
     }
 
     const response = await apiRequest<{ testCases: string[] }>("POST", "test-cases", {

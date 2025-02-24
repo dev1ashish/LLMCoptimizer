@@ -6,9 +6,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Loader2, Info } from 'lucide-react';
 import { useFlowStore } from '@/store/flowstore';
-import { BasePromptNodeData } from '@/Types/flowTypes';
+import { BasePromptNodeData, MetaPromptNodeData, VariationsNodeData } from '@/Types/flowTypes';
 import { ModelSelector } from '@/components/model-selector';
-import { generateMetaPrompt } from '@/lib/ai-providers';
+import { generateMetaPrompt, generateVariations, generateTestCases } from '@/lib/ai-providers';
 import { useToast } from '@/hooks/use-toast';
 import {
   Tooltip,
@@ -16,23 +16,25 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Checkbox } from '@/components/ui/checkbox';
+import { useAutoMode } from '@/hooks/use-auto-mode';
+import { debounce } from 'lodash';
 
 // Example prompts for inspiration
 const EXAMPLE_PROMPTS = [
-  "I want an AI assistant that helps with writing professional emails",
-  "I want an AI assistant that provides detailed explanations of scientific concepts",
-  "I want an AI assistant specialized in creative storytelling for children",
-  "I want an AI assistant that helps developers debug and optimize their code",
-  "I want an AI assistant that acts as a personal fitness coach"
+  "I want an AI assistant that helps users write high-converting marketing copy for their products",
+  "I need an AI that can help users learn programming concepts through interactive tutorials",
+  "I want an AI that can assist writers with creative story development and character creation",
+  "I need an AI that can analyze financial data and provide investment recommendations",
+  "I want an AI that can help healthcare professionals diagnose common illnesses based on symptoms"
 ];
 
-// Add debounce utility function
-const debounce = (func: Function, delay: number) => {
-  let debounceTimer: NodeJS.Timeout;
-  return function(...args: any[]) {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => func(...args), delay);
-  };
+// Helper function to safely access node data with type assertions
+const getNodeData = <T,>(node: any, property: string): T | undefined => {
+  if (node && node.data && property in node.data) {
+    return node.data[property] as T;
+  }
+  return undefined;
 };
 
 // Base Prompt Node component
@@ -41,8 +43,12 @@ const BasePromptNode: React.FC<NodeProps<BasePromptNodeData>> = ({ id, data }) =
   const [modelConfig, setModelConfig] = useState(data.modelConfig);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [autoMode, setAutoMode] = useState(false);
   const { updateNodeData } = useFlowStore();
   const { toast } = useToast();
+  
+  // Use our new auto mode hook
+  const { isRunning, runAutoMode } = useAutoMode();
 
   // Update local state when node data changes externally
   useEffect(() => {
@@ -79,8 +85,8 @@ const BasePromptNode: React.FC<NodeProps<BasePromptNodeData>> = ({ id, data }) =
     debouncedUpdateNodeData(newValue);
   };
 
-  // Handle prompt generation
-  const handleGenerate = async () => {
+  // Handle prompt generation or auto mode run
+  const handleAction = async () => {
     // Input validation
     if (!basePrompt.trim()) {
       setError("Please enter a base prompt");
@@ -94,57 +100,83 @@ const BasePromptNode: React.FC<NodeProps<BasePromptNodeData>> = ({ id, data }) =
 
     // Reset error state
     setError(null);
-    setIsGenerating(true);
     
-    // Update node data
-    updateNodeData(id, { basePrompt, modelConfig });
-
-    try {
-      // Update meta prompt node to indicate generation is in progress
-      const metaPromptNode = useFlowStore.getState().getNodeByType('metaPromptNode');
-      if (metaPromptNode) {
-        updateNodeData(metaPromptNode.id, { isGenerating: true });
-      }
-
-      // Generate meta prompt
-      const generatedPrompt = await generateMetaPrompt(basePrompt, modelConfig);
+    if (autoMode) {
+      // Auto Mode: Run the entire workflow
+      console.log("🚀 Starting Auto Mode from BasePromptNode");
       
-      // Update meta prompt node with generated content
-      if (metaPromptNode) {
-        updateNodeData(metaPromptNode.id, {
-          basePrompt,
-          metaPrompt: {
-            id: 0,
+      // First update the node data to mark auto mode as active
+      updateNodeData(id, { 
+        basePrompt, 
+        modelConfig,
+        isAutoMode: true 
+      });
+      
+      try {
+        // Run auto mode and let it handle the entire flow
+        await runAutoMode(basePrompt, modelConfig);
+        console.log("✅ Auto Mode completed successfully");
+      } catch (error) {
+        // Error is already handled by the auto mode hook
+        console.error("❌ Auto Mode failed:", error);
+      }
+      
+      // Mark auto mode as finished regardless of success/failure
+      updateNodeData(id, { isAutoMode: false });
+    } else {
+      // Regular Mode: Only generate meta prompt
+      setIsGenerating(true);
+      
+      // Update node data
+      updateNodeData(id, { basePrompt, modelConfig });
+
+      try {
+        // Update meta prompt node to indicate generation is in progress
+        const metaPromptNode = useFlowStore.getState().getNodeByType('metaPromptNode');
+        if (metaPromptNode) {
+          updateNodeData(metaPromptNode.id, { isGenerating: true });
+        }
+
+        // Generate meta prompt
+        const generatedPrompt = await generateMetaPrompt(basePrompt, modelConfig);
+        
+        // Update meta prompt node with generated content
+        if (metaPromptNode) {
+          updateNodeData(metaPromptNode.id, {
             basePrompt,
-            generatedPrompt,
-            modelConfig,
-          },
-          isGenerating: false,
-        });
-      }
+            metaPrompt: {
+              id: 0,
+              basePrompt,
+              generatedPrompt,
+              modelConfig,
+            },
+            isGenerating: false,
+          });
+        }
 
-      toast({
-        title: 'Success',
-        description: 'Meta prompt generated successfully',
-      });
-    } catch (error) {
-      // Set error state
-      const errorMessage = error instanceof Error ? error.message : 'An error occurred during generation';
-      setError(errorMessage);
-      
-      toast({
-        title: 'Generation Failed',
-        description: errorMessage,
-        variant: 'destructive',
-      });
-      
-      // Reset meta prompt node generation state
-      const metaPromptNode = useFlowStore.getState().getNodeByType('metaPromptNode');
-      if (metaPromptNode) {
-        updateNodeData(metaPromptNode.id, { isGenerating: false });
+        toast({
+          title: 'Success',
+          description: 'Meta prompt generated successfully',
+        });
+      } catch (error) {
+        // Set error state
+        const errorMessage = error instanceof Error ? error.message : 'An error occurred during generation';
+        setError(errorMessage);
+        
+        toast({
+          title: 'Generation Failed',
+          description: errorMessage,
+          variant: 'destructive',
+        });
+        
+        // Reset meta prompt node generation state
+        const metaPromptNode = useFlowStore.getState().getNodeByType('metaPromptNode');
+        if (metaPromptNode) {
+          updateNodeData(metaPromptNode.id, { isGenerating: false });
+        }
+      } finally {
+        setIsGenerating(false);
       }
-    } finally {
-      setIsGenerating(false);
     }
   };
 
@@ -178,16 +210,39 @@ const BasePromptNode: React.FC<NodeProps<BasePromptNodeData>> = ({ id, data }) =
           />
           {error && <p className="text-sm text-red-500">{error}</p>}
           
-          <div className="flex justify-end">
+          <div className="flex justify-between">
             <Button
               variant="ghost"
               size="sm"
               onClick={setRandomExample}
               className="text-xs"
-              disabled={isGenerating}
+              disabled={isGenerating || isRunning}
             >
               Use Example
             </Button>
+            
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="auto-mode" 
+                checked={autoMode} 
+                onCheckedChange={(checked) => setAutoMode(!!checked)}
+              />
+              <Label htmlFor="auto-mode" className="text-xs cursor-pointer">
+                Auto Mode
+              </Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-3 w-3 cursor-help text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p className="max-w-xs text-xs">
+                      Auto Mode automatically completes the entire workflow up to the Model Arena.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
         </div>
 
@@ -200,17 +255,17 @@ const BasePromptNode: React.FC<NodeProps<BasePromptNodeData>> = ({ id, data }) =
         </div>
 
         <Button
-          onClick={handleGenerate}
+          onClick={handleAction}
           className="w-full"
-          disabled={isGenerating || !basePrompt.trim()}
+          disabled={(isGenerating || isRunning) || !basePrompt.trim()}
         >
-          {isGenerating ? (
+          {(isGenerating || isRunning) ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Generating...
+              {autoMode ? 'Running Auto Mode...' : 'Generating...'}
             </>
           ) : (
-            'Generate Meta Prompt'
+            autoMode ? 'Run Auto Mode' : 'Generate Meta Prompt'
           )}
         </Button>
       </CardContent>

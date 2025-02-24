@@ -18,6 +18,7 @@ export interface NodeData {
 export interface BasePromptNodeData extends NodeData {
   basePrompt: string;
   modelConfig: ModelConfig;
+  isAutoMode: boolean;
 }
 
 // Node data for meta prompt output

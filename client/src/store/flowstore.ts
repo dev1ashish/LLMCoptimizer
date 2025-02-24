@@ -29,7 +29,8 @@ const getInitialNodes = (): FlowNode[] => {
         label: 'Base Prompt',
         nodeType: 'basePromptNode',
         basePrompt: '',
-        modelConfig: defaultModelConfigs[0]
+        modelConfig: defaultModelConfigs[0],
+        isAutoMode: false
       } as BasePromptNodeData
     },
     {
@@ -210,23 +211,80 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     return newNode;
   },
 
-  updateNodeData: (nodeId, data) => {
-    set(
-      produce((state: FlowState) => {
-        const node = state.nodes.find((n) => n.id === nodeId);
-        if (node) {
-          // Simplify to avoid TypeScript errors - still prevents some unnecessary updates
-          const currentDataString = JSON.stringify(node.data);
-          const newData = { ...node.data, ...data };
-          const newDataString = JSON.stringify(newData);
-          
-          // Only update if there are actual changes
-          if (currentDataString !== newDataString) {
-            node.data = newData;
+  updateNodeData: (id: string, newData: Partial<FlowNodeData>) => {
+    // Make a deep copy to avoid any state mutation issues
+    const nodes = [...get().nodes];
+    const nodeIndex = nodes.findIndex(node => node.id === id);
+    
+    if (nodeIndex !== -1) {
+      // Create a copy of the current node
+      const node = { ...nodes[nodeIndex] };
+      
+      // Check for specific boolean values that should always update
+      const isBooleanProperty = (key: string, value: any) => {
+        // This is necessary for boolean properties that need to be tracked
+        return typeof value === 'boolean' && 
+               ['isAutoMode', 'isGenerating', 'isEvaluating', 'isComparing'].includes(key);
+      };
+
+      if (node.data) {
+        // Create a new data object with the merged data
+        const currentData = { ...node.data };
+        const updatedData = { ...currentData };
+        
+        // Check each key in newData to determine if an update is needed
+        let hasChanges = false;
+        
+        for (const key in newData) {
+          if (Object.prototype.hasOwnProperty.call(newData, key)) {
+            const newValue = (newData as any)[key];
+            
+            // Always update boolean tracking properties
+            if (isBooleanProperty(key, newValue)) {
+              if ((updatedData as any)[key] !== newValue) {
+                console.log(`Updating boolean property ${key} from ${(updatedData as any)[key]} to ${newValue}`);
+                (updatedData as any)[key] = newValue;
+                hasChanges = true;
+              }
+              continue;
+            }
+
+            // Skip undefined values
+            if (newValue === undefined) continue;
+            
+            // For objects and arrays, use JSON comparison to detect changes
+            if (typeof newValue === 'object' && newValue !== null) {
+              // Stringify both for comparison (handles arrays and objects)
+              const currentStr = JSON.stringify((currentData as any)[key]);
+              const newStr = JSON.stringify(newValue);
+              
+              if (currentStr !== newStr) {
+                (updatedData as any)[key] = newValue;
+                hasChanges = true;
+              }
+            } 
+            // For primitives, direct comparison
+            else if ((currentData as any)[key] !== newValue) {
+              (updatedData as any)[key] = newValue;
+              hasChanges = true;
+            }
           }
         }
-      })
-    );
+        
+        // Only update if there are actual changes
+        if (hasChanges) {
+          nodes[nodeIndex] = {
+            ...node,
+            data: updatedData
+          };
+          
+          set({ nodes });
+          console.log(`Updated node ${id} data`);
+        } else {
+          console.log(`No changes detected for node ${id}, skipping update`);
+        }
+      }
+    }
   },
 
   onNodesConnect: (connection) => {

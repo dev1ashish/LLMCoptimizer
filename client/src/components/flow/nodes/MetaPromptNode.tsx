@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Loader2, Copy, Info } from 'lucide-react';
-import { useFlowStore } from '@/store/flowStore';
+import { useFlowStore } from '@/store/flowstore';
 import { MetaPromptNodeData } from '@/Types/flowTypes';
 import { ModelSelector } from '@/components/model-selector';
 import { generateVariations } from '@/lib/ai-providers';
@@ -25,6 +25,7 @@ const MetaPromptNode: React.FC<NodeProps<MetaPromptNodeData>> = ({ id, data }) =
   const [error, setError] = useState<string | null>(null);
   const { updateNodeData } = useFlowStore();
   const { toast } = useToast();
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Update local state when node data changes
   useEffect(() => {
@@ -39,52 +40,50 @@ const MetaPromptNode: React.FC<NodeProps<MetaPromptNodeData>> = ({ id, data }) =
 
   // Handle generate variations
   const handleGenerateVariations = async () => {
-    if (!generatedPrompt.trim()) {
+    if (!data.metaPrompt) {
       setError("No meta prompt to generate variations from");
-      toast({
-        title: 'Error',
-        description: 'No meta prompt to generate variations from',
-        variant: 'destructive',
-      });
       return;
     }
 
-    // Reset error state
+    setIsGenerating(true);
     setError(null);
 
-    // Update this node's model config
-    updateNodeData(id, { 
-      modelConfig,
-      metaPrompt: {
-        ...data.metaPrompt!,
-        generatedPrompt,
-        modelConfig
-      }
-    });
-
-    // Update variations node to indicate generation is in progress
-    const variationsNode = useFlowStore.getState().getNodeByType('variationsNode');
-    if (variationsNode) {
-      updateNodeData(variationsNode.id, { isGenerating: true, modelConfig });
-    }
-
     try {
+      // Update variations node to indicate generation is in progress
+      const variationsNode = useFlowStore.getState().getNodeByType('variationsNode');
+      if (variationsNode) {
+        console.log("📝 MetaPromptNode: Setting variations node to generating state");
+        updateNodeData(variationsNode.id, { 
+          isGenerating: true,
+          // Make sure to pass the meta prompt data to the variations node
+          metaPrompt: data.metaPrompt,
+          modelConfig: data.modelConfig || data.metaPrompt.modelConfig
+        });
+      }
+
       // Generate variations
-      const variationsContent = await generateVariations(generatedPrompt, modelConfig);
-      
+      console.log("🔄 MetaPromptNode: Calling generateVariations with model config:", data.modelConfig || data.metaPrompt.modelConfig);
+      const variations = await generateVariations(
+        data.metaPrompt.generatedPrompt,
+        data.modelConfig || data.metaPrompt.modelConfig
+      );
+      console.log("✅ MetaPromptNode: Generated variations:", variations.length);
+
       // Create variation objects
-      const promptVariations = variationsContent.map((content, index) => ({
+      const promptVariations = variations.map((content, index) => ({
         id: index,
         metaPromptId: data.metaPrompt?.id || 0,
         content,
-        modelConfig,
+        modelConfig: data.modelConfig || data.metaPrompt.modelConfig,
       }));
 
       // Update variations node with generated content
       if (variationsNode) {
+        console.log("📝 MetaPromptNode: Updating variations node with result");
         updateNodeData(variationsNode.id, {
           metaPrompt: data.metaPrompt,
           variations: promptVariations,
+          modelConfig: data.modelConfig || data.metaPrompt.modelConfig,
           isGenerating: false,
         });
       }
@@ -95,7 +94,7 @@ const MetaPromptNode: React.FC<NodeProps<MetaPromptNodeData>> = ({ id, data }) =
       });
     } catch (error) {
       // Set error state
-      const errorMessage = error instanceof Error ? error.message : 'An error occurred';
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred during generation';
       setError(errorMessage);
       
       toast({
@@ -105,9 +104,12 @@ const MetaPromptNode: React.FC<NodeProps<MetaPromptNodeData>> = ({ id, data }) =
       });
       
       // Reset variations node generation state
+      const variationsNode = useFlowStore.getState().getNodeByType('variationsNode');
       if (variationsNode) {
         updateNodeData(variationsNode.id, { isGenerating: false });
       }
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -169,7 +171,7 @@ const MetaPromptNode: React.FC<NodeProps<MetaPromptNodeData>> = ({ id, data }) =
         )}
       </CardHeader>
       <CardContent className="pt-4 space-y-4">
-        {data.isGenerating ? (
+        {isGenerating ? (
           <div className="flex flex-col justify-center items-center h-40 gap-2">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <span className="text-sm text-muted-foreground">Generating meta prompt...</span>

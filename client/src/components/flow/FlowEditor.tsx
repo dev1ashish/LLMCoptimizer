@@ -30,9 +30,14 @@ import {
   Upload,
   DownloadCloud, 
   RefreshCw, 
-  ZoomIn 
+  ZoomIn,
+  Moon,
+  Sun,
+  StopCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { useAutoMode } from '@/hooks/use-auto-mode';
 import { 
   Dialog,
   DialogContent,
@@ -42,6 +47,7 @@ import {
   DialogFooter,
   DialogDescription
 } from '@/components/ui/dialog';
+import { useTheme } from "next-themes";
 
 // Import node components
 import BasePromptNode from './nodes/BasePromptNode';
@@ -85,6 +91,11 @@ const SimpleFlowEditor = () => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const { theme } = useTheme();
+  
+  // State to track auto mode status and get the stopAutoMode function
+  const [isAutoMode, setIsAutoMode] = useState(false);
+  const { stopAutoMode } = useAutoMode();
   
   // Set up mock API flag to ensure we can work without a backend
   useEffect(() => {
@@ -183,6 +194,66 @@ const SimpleFlowEditor = () => {
   const onConnect = useCallback((params: Connection) => {
     onNodesConnect(params);
   }, [onNodesConnect]);
+  
+  // Check if auto mode is active
+  useEffect(() => {
+    // Check if any nodes are in "running auto mode" state
+    const basePromptNode = getNodeByType('basePromptNode');
+    const metaPromptNode = getNodeByType('metaPromptNode');
+    const variationsNode = getNodeByType('variationsNode');
+    const testCasesNode = getNodeByType('testCasesNode');
+    const evaluationNode = getNodeByType('evaluationNode');
+    
+    // Use type assertion and optional chaining for safe property access
+    const isAnyNodeRunning = 
+      (basePromptNode?.data && 'isAutoMode' in basePromptNode.data && basePromptNode.data.isAutoMode) || 
+      (metaPromptNode?.data && 'isGenerating' in metaPromptNode.data && metaPromptNode.data.isGenerating) || 
+      (variationsNode?.data && 'isGenerating' in variationsNode.data && variationsNode.data.isGenerating) || 
+      (testCasesNode?.data && 'isGenerating' in testCasesNode.data && testCasesNode.data.isGenerating) || 
+      (evaluationNode?.data && 'isEvaluating' in evaluationNode.data && evaluationNode.data.isEvaluating);
+    
+    setIsAutoMode(!!isAnyNodeRunning);
+  }, [nodes, getNodeByType]);
+  
+  // Handle stopping auto mode using the hook's stopAutoMode function
+  const handleStopAutoMode = useCallback(() => {
+    // Call the hook's stopAutoMode function
+    stopAutoMode();
+    
+    // Also update all nodes to stop their processing immediately
+    const basePromptNode = getNodeByType('basePromptNode');
+    const metaPromptNode = getNodeByType('metaPromptNode');
+    const variationsNode = getNodeByType('variationsNode');
+    const testCasesNode = getNodeByType('testCasesNode');
+    const evaluationNode = getNodeByType('evaluationNode');
+    
+    if (basePromptNode) {
+      updateNodeData(basePromptNode.id, { isAutoMode: false });
+    }
+    
+    if (metaPromptNode) {
+      updateNodeData(metaPromptNode.id, { isGenerating: false });
+    }
+    
+    if (variationsNode) {
+      updateNodeData(variationsNode.id, { isGenerating: false });
+    }
+    
+    if (testCasesNode) {
+      updateNodeData(testCasesNode.id, { isGenerating: false });
+    }
+    
+    if (evaluationNode) {
+      updateNodeData(evaluationNode.id, { isEvaluating: false, progress: 0 });
+    }
+    
+    setIsAutoMode(false);
+    
+    toast({
+      title: "Auto Mode Stopped",
+      description: "Auto mode has been stopped",
+    });
+  }, [getNodeByType, updateNodeData, toast, stopAutoMode]);
   
   // Check if any node is loading
   const isAnyNodeLoading = useMemo(() => {
@@ -328,6 +399,12 @@ const SimpleFlowEditor = () => {
         <Controls showInteractive={false} />
         <MiniMap zoomable pannable />
         
+        {/* Top left panel for theme toggle */}
+        <Panel position="top-left">
+          <ThemeToggle />
+        </Panel>
+        
+        {/* Top right panel for controls */}
         <Panel position="top-right">
           <div className="flex gap-2">
             <input
@@ -398,6 +475,19 @@ const SimpleFlowEditor = () => {
             </Button>
           </div>
         </Panel>
+        
+        {isAutoMode && (
+          <Panel position="bottom-center">
+            <Button
+              variant="destructive"
+              onClick={handleStopAutoMode}
+              className="flex items-center gap-2"
+            >
+              <StopCircle className="h-4 w-4" />
+              <span>Stop Auto Mode</span>
+            </Button>
+          </Panel>
+        )}
         
         {isAnyNodeLoading && (
           <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-10 bg-background/80 rounded-full px-4 py-1 shadow-md flex items-center gap-2">
