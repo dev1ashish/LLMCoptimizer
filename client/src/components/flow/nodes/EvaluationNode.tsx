@@ -24,7 +24,7 @@ import {
   X, 
   AlertTriangle 
 } from 'lucide-react';
-import { useFlowStore } from '@/store/flowStore';
+import { useFlowStore } from '@/store/flowstore';
 import { EvaluationNodeData } from '@/Types/flowTypes';
 import { ModelSelector } from '@/components/model-selector';
 import { evaluateResponse } from '@/lib/ai-providers';
@@ -226,35 +226,62 @@ const EvaluationNode: React.FC<NodeProps<EvaluationNodeData>> = ({ id, data }) =
     // Close confirm dialog
     setIsConfirmDialogOpen(false);
 
-    // Import the evaluation service dynamically to avoid initial load time
+    // Start evaluation
+    updateNodeData(id, { 
+      isEvaluating: true, 
+      progress: 0,
+      results: []
+    });
+
     try {
-      const { evaluateAllWithAgents, convertAgentResults } = await import('@/services/langchainEvaluationService');
+      // Import the evaluation service dynamically to avoid initial load time
+      let agentResults;
+      let standardResults;
+      
+      try {
+        const evalService = await import('@/services/langchainEvaluationService');
+        
+        // Update progress handler
+        const handleProgress = (progress: number) => {
+          updateNodeData(id, { progress });
+        };
+        
+        // Run the evaluation with multiple agents
+        agentResults = await evalService.evaluateAllWithAgents(
+          data.variations,
+          data.testCases,
+          data.criteria,
+          modelConfig,
+          handleProgress
+        );
+        
+        // Convert the agent results to standard format
+        standardResults = evalService.convertAgentResults(agentResults);
+      } catch (importError) {
+        console.error("Failed to import evaluation service:", importError);
+        
+        // Generate mock results as fallback
+        standardResults = generateMockEvaluationResults(
+          data.variations,
+          data.testCases,
+          data.criteria
+        );
+        
+        // Show warning about using mock data
+        toast({
+          title: 'Using Mock Evaluation',
+          description: 'Evaluation service not available. Using mock data instead.',
+          variant: 'warning',
+        });
+        
+        // Simulate progress updates
+        for (let i = 1; i <= 10; i++) {
+          updateNodeData(id, { progress: i * 10 });
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      }
 
-      // Start evaluation
-      updateNodeData(id, { 
-        isEvaluating: true, 
-        progress: 0,
-        results: []
-      });
-
-      // Update progress
-      const handleProgress = (progress: number) => {
-        updateNodeData(id, { progress });
-      };
-
-      // Run the evaluation with multiple agents
-      const agentResults = await evaluateAllWithAgents(
-        data.variations,
-        data.testCases,
-        data.criteria,
-        modelConfig,
-        handleProgress
-      );
-
-      // Convert the agent results to standard format
-      const standardResults = convertAgentResults(agentResults);
-
-      // Update results
+      // Update results in the node
       updateNodeData(id, {
         results: standardResults,
         isEvaluating: false,
@@ -296,6 +323,38 @@ const EvaluationNode: React.FC<NodeProps<EvaluationNodeData>> = ({ id, data }) =
         variant: 'destructive',
       });
     }
+  };
+  
+  // Generate mock evaluation results for fallback
+  const generateMockEvaluationResults = (
+    variations: any[],
+    testCases: any[],
+    criteria: any[]
+  ) => {
+    const results = [];
+    let id = 0;
+    
+    for (const variation of variations) {
+      for (const testCase of testCases) {
+        for (const criterion of criteria) {
+          // Generate a random score between 6.5 and 9.0
+          const score = 6.5 + Math.random() * 2.5;
+          
+          // Create a mock evaluation result
+          results.push({
+            id: id++,
+            variationId: variation.id,
+            testCaseId: testCase.id,
+            criterionId: criterion.id,
+            score,
+            response: `**GPT-4o Evaluator** (Score: ${score.toFixed(1)}/10):\nThis prompt performs well on the "${criterion.name}" criterion. It effectively addresses the key aspects of ${criterion.description.toLowerCase()}.\n\n**Claude 3.5 Evaluator** (Score: ${(score + (Math.random() * 0.5 - 0.25)).toFixed(1)}/10):\nThe prompt demonstrates strong capabilities in terms of ${criterion.name.toLowerCase()}. It aligns well with expectations for ${criterion.description.toLowerCase()}.`,
+            evaluatorModel: 'GPT-4o+Claude-3.5 (Mock)'
+          });
+        }
+      }
+    }
+    
+    return results;
   };
 
   return (
