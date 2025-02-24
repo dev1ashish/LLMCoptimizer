@@ -22,7 +22,9 @@ import {
   Edit,
   Check,
   X, 
-  AlertTriangle 
+  AlertTriangle,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { useFlowStore } from '@/store/flowstore';
 import { EvaluationNodeData } from '@/Types/flowTypes';
@@ -55,6 +57,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { 
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 
 // Default evaluation criteria
 const defaultCriteria = [
@@ -79,6 +89,8 @@ const EvaluationNode: React.FC<NodeProps<EvaluationNodeData>> = ({ id, data }) =
   const [evaluationAgents, setEvaluationAgents] = useState<string[]>(["gpt-4o", "claude-3-5-sonnet"]);
   const { updateNodeData } = useFlowStore();
   const { toast } = useToast();
+  const [showReasoning, setShowReasoning] = useState(true);
+  const [selectedResult, setSelectedResult] = useState<any | null>(null);
 
   // Validate criterion form
   useEffect(() => {
@@ -355,6 +367,11 @@ const EvaluationNode: React.FC<NodeProps<EvaluationNodeData>> = ({ id, data }) =
     }
     
     return results;
+  };
+
+  // Add this function to display agent reasoning
+  const displayAgentReasoning = (result: any) => {
+    setSelectedResult(result);
   };
 
   return (
@@ -684,6 +701,96 @@ const EvaluationNode: React.FC<NodeProps<EvaluationNodeData>> = ({ id, data }) =
           >
             Missing Variations or Test Cases
           </Button>
+        )}
+
+        {/* Additional UI element after the evaluation results section */}
+        {data.results && data.results.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label className="font-medium">Evaluation Results</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="show-reasoning" className="text-sm">Show Agent Reasoning</Label>
+                <Switch 
+                  id="show-reasoning" 
+                  checked={showReasoning} 
+                  onCheckedChange={setShowReasoning} 
+                />
+              </div>
+            </div>
+            
+            <div className="border rounded-md overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Variation</TableHead>
+                    <TableHead>Test Case</TableHead>
+                    <TableHead>Criterion</TableHead>
+                    <TableHead>Score</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.results.slice(0, 10).map((result, idx) => {
+                    // Find the variation, test case and criterion names
+                    const variation = data.variations?.find(v => v.id === result.variationId);
+                    const testCase = data.testCases?.find(t => t.id === result.testCaseId);
+                    const criterion = data.criteria.find(c => c.id === result.criterionId);
+                    
+                    return (
+                      <TableRow key={idx}>
+                        <TableCell className="font-mono">V{result.variationId + 1}</TableCell>
+                        <TableCell className="truncate max-w-[120px]">
+                          {testCase ? (
+                            <span title={testCase.input}>{testCase.input.substring(0, 20)}...</span>
+                          ) : (
+                            `Test Case ${result.testCaseId + 1}`
+                          )}
+                        </TableCell>
+                        <TableCell>{criterion ? criterion.name : `Criterion ${result.criterionId}`}</TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={result.score > 7 ? "success" : result.score > 5 ? "default" : "destructive"}
+                          >
+                            {result.score.toFixed(1)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => displayAgentReasoning(result)}
+                          >
+                            <Info className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {data.results.length > 10 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+                        Showing first 10 of {data.results.length} results. Check Results node for full details.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            
+            {showReasoning && selectedResult && (
+              <div className="border rounded-md p-4 space-y-2 bg-muted/30">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium">Agent Reasoning</h4>
+                  <Badge variant="outline">{selectedResult.evaluatorModel}</Badge>
+                </div>
+                <ScrollArea className="h-60">
+                  <div className="prose prose-sm dark:prose-invert whitespace-pre-wrap">
+                    {selectedResult.response}
+                  </div>
+                </ScrollArea>
+              </div>
+            )}
+          </div>
         )}
       </CardContent>
 

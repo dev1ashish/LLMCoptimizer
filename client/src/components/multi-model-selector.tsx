@@ -43,7 +43,8 @@ export function MultiModelSelector({
       return acc;
     }, {} as Record<string, boolean>);
     
-    let providers = { ...allProviders };
+    const defaultConfigs: ModelConfig[] = [];
+    const providers = { ...allProviders };
     const models: Record<string, string[]> = {};
     const keys: Record<string, string> = {};
     
@@ -68,21 +69,23 @@ export function MultiModelSelector({
         }
       });
       
-      setSelectedConfigs(initialSelectedModels);
+      // Use the provided models
+      defaultConfigs.push(...initialSelectedModels);
     } else {
       // If no initial models, select the first model from each provider by default
       Object.keys(MODEL_CONFIGS).forEach(provider => {
         if (MODEL_CONFIGS[provider].models.length > 0) {
           const defaultModel = MODEL_CONFIGS[provider].models[0].id;
-          models[provider] = [defaultModel];
+          if (!models[provider]) {
+            models[provider] = [];
+          }
+          models[provider].push(defaultModel);
           
           // Create a default config for this model
-          const newConfig = {
-            ...getDefaultConfig(provider, defaultModel),
-            apiKey: ''
-          };
+          const providerType = provider as "openai" | "anthropic" | "google" | "groq";
+          const newConfig = getDefaultConfig(providerType, defaultModel);
           
-          setSelectedConfigs(prev => [...prev, newConfig]);
+          defaultConfigs.push(newConfig);
         }
       });
     }
@@ -90,7 +93,13 @@ export function MultiModelSelector({
     setSelectedProviders(providers);
     setSelectedModels(models);
     setApiKeys(keys);
-  }, [initialSelectedModels]);
+    setSelectedConfigs(defaultConfigs);
+    
+    // Immediately call the change handler to update the parent component
+    if (defaultConfigs.length > 0) {
+      onModelConfigsChange(defaultConfigs);
+    }
+  }, []);
 
   // Handle provider toggle
   const handleProviderToggle = (provider: string, checked: boolean) => {
@@ -135,8 +144,9 @@ export function MultiModelSelector({
       ];
       
       // Add new config to selected configs
+      const providerType = provider as "openai" | "anthropic" | "google" | "groq";
       const newConfig = {
-        ...getDefaultConfig(provider, modelId),
+        ...getDefaultConfig(providerType, modelId),
         apiKey: apiKeys[provider] || ''
       };
       

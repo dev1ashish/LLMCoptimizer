@@ -9,7 +9,7 @@ export default function Home() {
         
         <footer className="mt-10 text-center text-sm text-muted-foreground">
           <p>
-            Built with LangChain.js and React Flow. Test your prompts with GPT-4o and Claude 3.5 agents.
+           Optimize your prompts for LLM Controls with GPT-4o and Claude 3.5 agents.
           </p>
         </footer>
       </div>

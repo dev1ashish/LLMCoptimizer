@@ -10,6 +10,10 @@ export const modelConfigSchema = z.object({
   temperature: z.number().min(0).max(2).default(0.7),
   maxTokens: z.number().min(1).default(2048),
   topP: z.number().min(0).max(1).default(1),
+  // Add provider-specific parameters
+  frequencyPenalty: z.number().min(-2).max(2).optional(),
+  presencePenalty: z.number().min(-2).max(2).optional(),
+  topK: z.number().min(1).optional(),
   apiKey: z.string().optional()
 });
 

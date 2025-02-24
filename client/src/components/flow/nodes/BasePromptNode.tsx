@@ -201,7 +201,7 @@ const BasePromptNode: React.FC<NodeProps<BasePromptNodeData>> = ({ id, data }) =
       </CardHeader>
       <CardContent className="pt-4 space-y-4">
         <div className="space-y-2">
-          <Label>What kind of AI assistant do you want?</Label>
+          <Label>What are you building today?</Label>
           <Textarea
             placeholder="e.g., I want an AI that helps with writing blog posts"
             value={basePrompt}

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -11,7 +11,10 @@ import {
   Copy, 
   ExternalLink,
   Check,
-  Maximize2
+  Maximize2,
+  ChevronDown,
+  ChevronRight,
+  MessageSquare
 } from 'lucide-react';
 import { useFlowStore } from '@/store/flowStore';
 import { ResultsNodeData } from '@/Types/flowTypes';
@@ -36,6 +39,13 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { 
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Badge } from "@/components/ui/badge";
 
 // Results Node component
 const ResultsNode: React.FC<NodeProps<ResultsNodeData>> = ({ id, data }) => {
@@ -190,6 +200,9 @@ const ResultsNode: React.FC<NodeProps<ResultsNodeData>> = ({ id, data }) => {
       description: 'Evaluation results exported as JSON',
     });
   };
+
+  // Add this state
+  const [expandedResult, setExpandedResult] = useState<number | null>(null);
 
   return (
     <Card className="w-[500px] shadow-md">
@@ -405,14 +418,24 @@ const ResultsNode: React.FC<NodeProps<ResultsNodeData>> = ({ id, data }) => {
                           </TableCell>
                           <TableCell>{result.bestModel.model}</TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleCopyContent(result.content)}
-                              title="Copy variation"
-                            >
-                              <Copy className="h-4 w-4" />
-                            </Button>
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setExpandedResult(expandedResult === result.variationId ? null : result.variationId)}
+                                title="View agent reasoning"
+                              >
+                                <MessageSquare className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleCopyContent(result.content)}
+                                title="Copy variation"
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -464,6 +487,49 @@ const ResultsNode: React.FC<NodeProps<ResultsNodeData>> = ({ id, data }) => {
         ) : (
           <div className="text-center py-10 text-muted-foreground">
             <p>No evaluation results yet. Run the evaluation to see results here.</p>
+          </div>
+        )}
+
+        {/* After the TableBody, add this collapsible section */}
+        {expandedResult !== null && (
+          <div className="col-span-full p-4 bg-muted/20 border-t">
+            <div className="space-y-4">
+              <h4 className="font-medium">Evaluation Details for Variation {expandedResult + 1}</h4>
+              <div className="space-y-2">
+                {data.evaluationResults
+                  .filter(r => r.variationId === expandedResult)
+                  .slice(0, 3) // Show first 3 results
+                  .map((result, idx) => {
+                    const criterion = data.evaluationResults.find(r => r.criterionId === result.criterionId)?.response || '';
+                    return (
+                      <Collapsible key={idx} className="border rounded-md">
+                        <CollapsibleTrigger className="flex items-center justify-between w-full p-3 text-left hover:bg-muted">
+                          <div className="flex items-center gap-2">
+                            <ChevronRight className="h-4 w-4 shrink-0 transition-transform ui-open:rotate-90" />
+                            <span>Criterion: {result.criterionId}</span>
+                            <Badge className="ml-2">{result.score.toFixed(1)}</Badge>
+                          </div>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="p-3 pt-0 border-t">
+                            <ScrollArea className="h-60">
+                              <div className="prose prose-sm dark:prose-invert whitespace-pre-wrap">
+                                {result.response}
+                              </div>
+                            </ScrollArea>
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    );
+                  })}
+                
+                {data.evaluationResults.filter(r => r.variationId === expandedResult).length > 3 && (
+                  <p className="text-sm text-center text-muted-foreground">
+                    Showing 3 of {data.evaluationResults.filter(r => r.variationId === expandedResult).length} results
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </CardContent>
