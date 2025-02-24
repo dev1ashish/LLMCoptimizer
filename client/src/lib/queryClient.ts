@@ -19,7 +19,13 @@ export async function apiRequest<T = any>(
 ): Promise<T> {
   try {
     // For development/testing when no backend is available
-    if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_MOCK_API === 'true') {
+    const isDevelopment = typeof window !== 'undefined' && 
+      (window.location.hostname === 'localhost' || 
+      window.location.hostname === '127.0.0.1');
+    
+    const shouldMock = isDevelopment || localStorage.getItem('MOCK_API') === 'true';
+    
+    if (shouldMock) {
       console.debug(`[MOCK API] ${method} ${url}`, data ? { data } : '');
       
       // Simulate API delay
@@ -85,15 +91,15 @@ export function getApiKeys() {
       return JSON.parse(localKeys);
     }
     
-    // Then check environment variables
-    const envKeys = {
-      openai: process.env.REACT_APP_OPENAI_API_KEY || '',
-      anthropic: process.env.REACT_APP_ANTHROPIC_API_KEY || '',
-      google: process.env.REACT_APP_GOOGLE_API_KEY || '',
-      groq: process.env.REACT_APP_GROQ_API_KEY || ''
+    // Default keys when environment variables are not available
+    const defaultKeys = {
+      openai: localStorage.getItem('OPENAI_API_KEY') || '',
+      anthropic: localStorage.getItem('ANTHROPIC_API_KEY') || '',
+      google: localStorage.getItem('GOOGLE_API_KEY') || '',
+      groq: localStorage.getItem('GROQ_API_KEY') || ''
     };
     
-    return envKeys;
+    return defaultKeys;
   } catch (error) {
     console.error("[API Keys] Failed to get API keys:", error);
     return {};

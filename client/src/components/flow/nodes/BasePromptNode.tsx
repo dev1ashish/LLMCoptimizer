@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Loader2, Info } from 'lucide-react';
-import { useFlowStore } from '@/store/flowStore';
+import { useFlowStore } from '@/store/flowstore';
 import { BasePromptNodeData } from '@/Types/flowTypes';
 import { ModelSelector } from '@/components/model-selector';
 import { generateMetaPrompt } from '@/lib/ai-providers';
@@ -26,6 +26,15 @@ const EXAMPLE_PROMPTS = [
   "I want an AI assistant that acts as a personal fitness coach"
 ];
 
+// Add debounce utility function
+const debounce = (func: Function, delay: number) => {
+  let debounceTimer: NodeJS.Timeout;
+  return function(...args: any[]) {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => func(...args), delay);
+  };
+};
+
 // Base Prompt Node component
 const BasePromptNode: React.FC<NodeProps<BasePromptNodeData>> = ({ id, data }) => {
   const [basePrompt, setBasePrompt] = useState(data.basePrompt || '');
@@ -44,7 +53,7 @@ const BasePromptNode: React.FC<NodeProps<BasePromptNodeData>> = ({ id, data }) =
     if (data.modelConfig !== modelConfig && data.modelConfig !== undefined) {
       setModelConfig(data.modelConfig);
     }
-  }, [data.basePrompt, data.modelConfig]);
+  }, [data.basePrompt, data.modelConfig, basePrompt, modelConfig]);
 
   // Set a random example prompt
   const setRandomExample = () => {
@@ -52,6 +61,22 @@ const BasePromptNode: React.FC<NodeProps<BasePromptNodeData>> = ({ id, data }) =
     const examplePrompt = EXAMPLE_PROMPTS[randomIndex];
     setBasePrompt(examplePrompt);
     updateNodeData(id, { basePrompt: examplePrompt });
+  };
+  
+  // Create debounced update function
+  const debouncedUpdateNodeData = useCallback(
+    debounce((newPrompt: string) => {
+      updateNodeData(id, { basePrompt: newPrompt });
+    }, 500),
+    [id, updateNodeData]
+  );
+  
+  // Handle text change
+  const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = e.target.value;
+    setBasePrompt(newValue);
+    setError(null);
+    debouncedUpdateNodeData(newValue);
   };
 
   // Handle prompt generation
@@ -148,10 +173,7 @@ const BasePromptNode: React.FC<NodeProps<BasePromptNodeData>> = ({ id, data }) =
           <Textarea
             placeholder="e.g., I want an AI that helps with writing blog posts"
             value={basePrompt}
-            onChange={(e) => {
-              setBasePrompt(e.target.value);
-              setError(null);
-            }}
+            onChange={handlePromptChange}
             className={`min-h-20 ${error ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
           />
           {error && <p className="text-sm text-red-500">{error}</p>}

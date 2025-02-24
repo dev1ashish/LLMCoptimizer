@@ -11,7 +11,14 @@ export async function generateMetaPrompt(
     console.log('[Meta Prompt] Requesting generation:', { basePrompt, config });
 
     // In local development or testing, we can mock the response
-    if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_MOCK_API === 'true') {
+    // Use a safer check for development environment that works in browsers
+    const isDevelopment = typeof window !== 'undefined' && 
+      window.location.hostname === 'localhost' || 
+      window.location.hostname === '127.0.0.1';
+    
+    const shouldMock = isDevelopment || localStorage.getItem('MOCK_API') === 'true';
+    
+    if (shouldMock) {
       await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
       return `You are an AI assistant that ${basePrompt.toLowerCase()}. You should respond in a helpful, accurate, and thoughtful manner. Always prioritize user safety and provide information that is factual and up-to-date. Maintain a conversational tone while being concise and relevant to the user's needs. If you're unsure about something, acknowledge your limitations rather than making up information.`;
     }
@@ -35,7 +42,13 @@ export async function generateVariations(
 ): Promise<string[]> {
   try {
     // In local development or testing, we can mock the response
-    if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_MOCK_API === 'true') {
+    const isDevelopment = typeof window !== 'undefined' && 
+      (window.location.hostname === 'localhost' || 
+      window.location.hostname === '127.0.0.1');
+    
+    const shouldMock = isDevelopment || localStorage.getItem('MOCK_API') === 'true';
+    
+    if (shouldMock) {
       await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API delay
       return [
         `${metaPrompt}\n\nAdditionally, focus on providing concise answers that get to the point quickly.`,
@@ -61,7 +74,13 @@ export async function generateTestCases(
 ): Promise<string[]> {
   try {
     // In local development or testing, we can mock the response
-    if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_MOCK_API === 'true') {
+    const isDevelopment = typeof window !== 'undefined' && 
+      (window.location.hostname === 'localhost' || 
+      window.location.hostname === '127.0.0.1');
+    
+    const shouldMock = isDevelopment || localStorage.getItem('MOCK_API') === 'true';
+    
+    if (shouldMock) {
       await new Promise(resolve => setTimeout(resolve, 1200)); // Simulate API delay
       return [
         "Can you help me understand quantum computing in simple terms?",
@@ -90,7 +109,13 @@ export async function evaluateResponse(
 ): Promise<number> {
   try {
     // In local development or testing, we can mock the response
-    if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_MOCK_API === 'true') {
+    const isDevelopment = typeof window !== 'undefined' && 
+      (window.location.hostname === 'localhost' || 
+      window.location.hostname === '127.0.0.1');
+    
+    const shouldMock = isDevelopment || localStorage.getItem('MOCK_API') === 'true';
+    
+    if (shouldMock) {
       await new Promise(resolve => setTimeout(resolve, 800)); // Simulate API delay
       // Return a random score between 6 and 9 for a generally positive evaluation
       return 6 + Math.random() * 3;
@@ -116,7 +141,13 @@ export async function generateAIResponse(
 ): Promise<string> {
   try {
     // In local development or testing, we can mock the response
-    if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_MOCK_API === 'true') {
+    const isDevelopment = typeof window !== 'undefined' && 
+      (window.location.hostname === 'localhost' || 
+      window.location.hostname === '127.0.0.1');
+    
+    const shouldMock = isDevelopment || localStorage.getItem('MOCK_API') === 'true';
+    
+    if (shouldMock) {
       await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000)); // Simulate variable API delay
       
       // Generate a simulated response
@@ -152,7 +183,13 @@ export async function evaluateWithAgents(
 ) {
   try {
     // In local development or testing, we can mock the response
-    if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_MOCK_API === 'true') {
+    const isDevelopment = typeof window !== 'undefined' && 
+      (window.location.hostname === 'localhost' || 
+      window.location.hostname === '127.0.0.1');
+    
+    const shouldMock = isDevelopment || localStorage.getItem('MOCK_API') === 'true';
+    
+    if (shouldMock) {
       await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API delay
       
       // Generate mock agent results

@@ -215,7 +215,15 @@ export const useFlowStore = create<FlowState>((set, get) => ({
       produce((state: FlowState) => {
         const node = state.nodes.find((n) => n.id === nodeId);
         if (node) {
-          node.data = { ...node.data, ...data };
+          // Simplify to avoid TypeScript errors - still prevents some unnecessary updates
+          const currentDataString = JSON.stringify(node.data);
+          const newData = { ...node.data, ...data };
+          const newDataString = JSON.stringify(newData);
+          
+          // Only update if there are actual changes
+          if (currentDataString !== newDataString) {
+            node.data = newData;
+          }
         }
       })
     );

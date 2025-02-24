@@ -86,6 +86,13 @@ const SimpleFlowEditor = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   
+  // Set up mock API flag to ensure we can work without a backend
+  useEffect(() => {
+    if (!localStorage.getItem('MOCK_API')) {
+      localStorage.setItem('MOCK_API', 'true');
+    }
+  }, []);
+  
   // Node changes handler - crucial for dragging functionality
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
