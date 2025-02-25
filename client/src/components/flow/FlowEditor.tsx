@@ -33,7 +33,8 @@ import {
   ZoomIn,
   Moon,
   Sun,
-  StopCircle
+  StopCircle,
+  ArrowLeft
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -452,6 +453,21 @@ const SimpleFlowEditor = () => {
     return () => {};
   }, [fitView]);
   
+  const handleBackToMainFlow = useCallback(() => {
+    
+    const currentUrl = window.location.href;
+    const url = new URL(currentUrl);
+    const returnUrl = url.searchParams.get('returnUrl');
+    console.log(returnUrl);
+    if (returnUrl) {
+      window.location.href = returnUrl;
+    } else {
+      console.warn('No return URL found in the query parameters');
+    }
+    
+  }, []);
+
+
   return (
     <div className="h-[calc(100vh-150px)] w-full border rounded-lg shadow-sm overflow-hidden relative">
       <ReactFlow
@@ -477,7 +493,20 @@ const SimpleFlowEditor = () => {
         
         {/* Top left panel for theme toggle */}
         <Panel position="top-left">
-          <ThemeToggle />
+          <div className="flex flex-col gap-2">
+            <ThemeToggle />
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleBackToMainFlow}
+              className="flex items-center gap-2"
+              title="Back to main flow"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to main flow
+            </Button>
+          </div>
         </Panel>
         
         {/* Top right panel for controls */}
