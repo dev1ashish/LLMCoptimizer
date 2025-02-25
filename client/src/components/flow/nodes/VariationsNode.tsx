@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Copy, Info, BadgePlus } from 'lucide-react';
-import { useFlowStore } from '@/store/flowStore';
+import { useFlowStore } from '@/store/flowstore';
 import { VariationsNodeData } from '@/Types/flowTypes';
 import { ModelSelector } from '@/components/model-selector';
 import { generateTestCases } from '@/lib/ai-providers';

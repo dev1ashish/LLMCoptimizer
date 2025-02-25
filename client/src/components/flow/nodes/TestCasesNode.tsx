@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2, Plus, Trash2, Upload, Download, Info } from 'lucide-react';
-import { useFlowStore } from '@/store/flowStore';
+import { useFlowStore } from '@/store/flowstore';
 import { TestCasesNodeData } from '@/Types/flowTypes';
 import { ModelSelector } from '@/components/model-selector';
 import { useToast } from '@/hooks/use-toast';

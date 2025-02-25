@@ -16,7 +16,7 @@ import {
   ChevronRight,
   MessageSquare
 } from 'lucide-react';
-import { useFlowStore } from '@/store/flowStore';
+import { useFlowStore } from '@/store/flowstore';
 import { ResultsNodeData } from '@/Types/flowTypes';
 import { formatScore, calculateWeightedAverage, copyToClipboard, downloadAsJson } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';

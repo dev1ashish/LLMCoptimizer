@@ -25,7 +25,7 @@ import {
   DollarSign,
   Clock
 } from 'lucide-react';
-import { useFlowStore } from '@/store/flowStore';
+import { useFlowStore } from '@/store/flowstore';
 import { ModelArenaNodeData } from '@/Types/flowTypes';
 import { MultiModelSelector } from '@/components/multi-model-selector';
 import { useToast } from '@/hooks/use-toast';
