@@ -287,8 +287,11 @@ const TestCasesNode: React.FC<NodeProps<TestCasesNodeData>> = ({ id, data }) => 
               <Label>Model Configuration</Label>
               <ModelSelector
                 value={modelConfig}
-                onChange={setModelConfig}
-              />
+                onChange={(newConfig) => {
+                  console.log("🟡 ModelSelector Change Triggered:", newConfig); 
+                  setModelConfig(newConfig);
+                  updateNodeData(id, { modelConfig: newConfig }); 
+          }}/>
             </div>
 
             <div className="flex gap-2">

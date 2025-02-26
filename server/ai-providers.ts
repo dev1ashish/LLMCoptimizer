@@ -11,7 +11,7 @@ Consider:
 - Constraints and guidelines
 - Edge cases and safety measures
 
-Output a clear, comprehensive system prompt that captures the essence of the request.`,
+Output a clear, comprehensive system prompt that captures the essence of the request. PROVIDE A VERY DETAILED META PROMPT WHICH CAN BE USED AS A SYSTEM PROMPT.`,
 
   variations: `Create 3 variations of the following system prompt. Each variation should maintain the core functionality but approach it differently. Consider:
 - Different personality traits

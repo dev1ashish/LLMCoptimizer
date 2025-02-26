@@ -208,9 +208,12 @@ const MetaPromptNode: React.FC<NodeProps<MetaPromptNodeData>> = ({ id, data }) =
                 <div className="space-y-2">
                   <Label>Model Configuration</Label>
                   <ModelSelector
-                    value={modelConfig}
-                    onChange={setModelConfig}
-                  />
+                  value={modelConfig}
+                  onChange={(newConfig) => {
+                  console.log("🟡 ModelSelector Change Triggered:", newConfig); 
+                  setModelConfig(newConfig);
+                  updateNodeData(id, { modelConfig: newConfig }); 
+              }}/>
                 </div>
 
                 <Button

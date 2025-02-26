@@ -192,7 +192,7 @@ const BasePromptNode: React.FC<NodeProps<BasePromptNodeData>> = ({ id, data }) =
               </TooltipTrigger>
               <TooltipContent>
                 <p className="max-w-xs">
-                  Describe what kind of AI assistant you want to create. This will be used to generate a more detailed system prompt.
+                  Describe what you want today.
                 </p>
               </TooltipContent>
             </Tooltip>
@@ -251,8 +251,12 @@ const BasePromptNode: React.FC<NodeProps<BasePromptNodeData>> = ({ id, data }) =
           <Label>Model Configuration</Label>
           <ModelSelector
             value={modelConfig}
-            onChange={setModelConfig}
-          />
+            onChange={(newConfig) => {
+              console.log("🟡 ModelSelector Change Triggered:", newConfig); 
+              setModelConfig(newConfig);
+              updateNodeData(id, { modelConfig: newConfig }); 
+            }}
+          />
         </div>
 
         <Button
